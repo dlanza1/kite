@@ -17,11 +17,14 @@ package org.kitesdk.data.spi.partition;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
+
 import java.util.Calendar;
 import java.util.TimeZone;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+
 import org.kitesdk.data.spi.FieldPartitioner;
 
 /**
@@ -39,7 +42,8 @@ import org.kitesdk.data.spi.FieldPartitioner;
 @Immutable
 public class CalendarFieldPartitioner extends FieldPartitioner<Long, Integer> {
 
-  protected static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+  protected static final TimeZone UTC = TimeZone.getTimeZone("Etc/GMT-2");
+  private static final Long NANO_MILLI_CONV = (long) Math.pow(10, 6);
   protected int calendarField;
 
   public CalendarFieldPartitioner(String sourceName, String name,
@@ -50,9 +54,7 @@ public class CalendarFieldPartitioner extends FieldPartitioner<Long, Integer> {
 
   @Override
   public Integer apply(@Nonnull Long timestamp) {
-    Calendar cal = Calendar.getInstance(UTC);
-    cal.setTimeInMillis(timestamp);
-    return cal.get(calendarField);
+    return getCalendar(timestamp).get(calendarField);
   }
 
   @Override
@@ -98,5 +100,15 @@ public class CalendarFieldPartitioner extends FieldPartitioner<Long, Integer> {
     return Objects.toStringHelper(this).add("sourceName", getSourceName())
         .add("name", getName())
         .add("cardinality", getCardinality()).toString();
+  }
+  
+  protected Calendar getCalendar(Long nanoseconds_timestamp){
+	    Calendar cal = Calendar.getInstance(UTC);
+	    
+	    long milliseconds = (long) (nanoseconds_timestamp / NANO_MILLI_CONV);
+	    
+	    cal.setTimeInMillis(milliseconds);
+	    
+	    return cal;
   }
 }
