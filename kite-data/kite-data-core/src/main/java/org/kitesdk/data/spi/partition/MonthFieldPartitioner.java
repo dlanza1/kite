@@ -17,6 +17,7 @@ package org.kitesdk.data.spi.partition;
 
 import java.text.NumberFormat;
 import java.util.Calendar;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -43,8 +44,6 @@ public class MonthFieldPartitioner extends CalendarFieldPartitioner {
 
   @Override
   public Integer apply(@Nonnull Long timestamp) {
-    Calendar cal = Calendar.getInstance(UTC);
-    cal.setTimeInMillis(timestamp);
-    return cal.get(calendarField) + 1; // Calendar month is 0-based
+    return getCalendar(timestamp).get(calendarField) + 1; // Calendar month is 0-based
   }
 }
