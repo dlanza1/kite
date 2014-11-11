@@ -88,6 +88,10 @@ public class PartitionFunctions {
     return new ProvidedFieldPartitioner(name,
         ProvidedFieldPartitioner.valuesType(valuesType));
   }
+  
+  public static FieldPartitioner module(String name, Integer module) {
+    return new ModuleFieldPartitioner(name, module);
+  }
 
   public static String toExpression(FieldPartitioner fieldPartitioner) {
     // TODO: add other strategies
@@ -148,6 +152,9 @@ public class PartitionFunctions {
     } else if (fieldPartitioner instanceof MinuteFieldPartitioner) {
       return String.format("minute(\"%s\", \"%s\")", fieldPartitioner.getSourceName(),
           fieldPartitioner.getName());
+    } else if (fieldPartitioner instanceof ModuleFieldPartitioner) {
+      return String.format("module(\"%s\", %s)", fieldPartitioner.getSourceName(),
+            ((ModuleFieldPartitioner) fieldPartitioner).getModule());
     } else if (fieldPartitioner instanceof ProvidedFieldPartitioner) {
       return String.format("provided(\"%s\", \"%s\")",
           fieldPartitioner.getName(),

@@ -24,11 +24,13 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Iterator;
+
 import org.apache.avro.Schema;
 import org.kitesdk.data.DatasetIOException;
 import org.kitesdk.data.PartitionStrategy;
@@ -39,6 +41,7 @@ import org.kitesdk.data.spi.partition.HashFieldPartitioner;
 import org.kitesdk.data.spi.partition.HourFieldPartitioner;
 import org.kitesdk.data.spi.partition.IdentityFieldPartitioner;
 import org.kitesdk.data.spi.partition.MinuteFieldPartitioner;
+import org.kitesdk.data.spi.partition.ModuleFieldPartitioner;
 import org.kitesdk.data.spi.partition.MonthFieldPartitioner;
 import org.kitesdk.data.spi.partition.ProvidedFieldPartitioner;
 import org.kitesdk.data.spi.partition.YearFieldPartitioner;
@@ -175,6 +178,8 @@ public class PartitionStrategyParser {
             fieldPartitioner.get(BUCKETS).asText());
         builder.hash(source, name, buckets);
       } else if (type.equals("year")) {
+    	builder.module(source, fieldPartitioner.get(VALUES).asInt());
+      } else if (type.equals("year")) {
         builder.year(source, name);
       } else if (type.equals("month")) {
         builder.month(source, name);
@@ -243,6 +248,11 @@ public class PartitionStrategyParser {
         partitioner.set(TYPE, TextNode.valueOf("provided"));
         partitioner.set(VALUES,
             TextNode.valueOf(((ProvidedFieldPartitioner) fp).getTypeAsString()));
+      } else if (fp instanceof ModuleFieldPartitioner) {
+    	partitioner.set(TYPE, TextNode.valueOf("module"));
+    	partitioner.set(SOURCE, TextNode.valueOf(fp.getSourceName()));
+    	partitioner.set(VALUES,
+                TextNode.valueOf(((ModuleFieldPartitioner) fp).getModule() + ""));
       } else {
         throw new ValidationException(
             "Unknown partitioner class: " + fp.getClass());

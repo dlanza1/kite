@@ -18,14 +18,18 @@ package org.kitesdk.data;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+
 import java.util.Map;
 import java.util.Set;
+
 import org.kitesdk.data.spi.PartitionStrategyParser;
 import org.kitesdk.data.spi.partition.DayOfMonthFieldPartitioner;
 import org.kitesdk.data.spi.partition.HourFieldPartitioner;
 import org.kitesdk.data.spi.partition.MinuteFieldPartitioner;
+import org.kitesdk.data.spi.partition.ModuleFieldPartitioner;
 import org.kitesdk.data.spi.partition.MonthFieldPartitioner;
 import org.kitesdk.data.spi.partition.PartitionFunctions;
+
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -36,8 +40,10 @@ import org.kitesdk.data.spi.partition.HashFieldPartitioner;
 import org.kitesdk.data.spi.partition.IdentityFieldPartitioner;
 import org.kitesdk.data.spi.partition.IntRangeFieldPartitioner;
 import org.kitesdk.data.spi.partition.RangeFieldPartitioner;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+
 import org.kitesdk.data.spi.FieldPartitioner;
 import org.kitesdk.data.spi.partition.YearFieldPartitioner;
 import org.slf4j.Logger;
@@ -353,6 +359,20 @@ public class PartitionStrategy {
      */
     public Builder range(String sourceName, int... upperBounds) {
       add(new IntRangeFieldPartitioner(sourceName, upperBounds));
+      return this;
+    }
+
+    /**
+     * Configure a module partitioner.
+     *
+     * @param sourceName
+     *          The entity field name from which to get values to be
+     *          partitioned.
+     * @param module Module to be used.
+     * @return An instance of the builder for method chaining.
+     */
+    public Builder module(String sourceName, int module) {
+      add(new ModuleFieldPartitioner(sourceName, module));
       return this;
     }
 
