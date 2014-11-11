@@ -17,7 +17,9 @@ package org.kitesdk.data.spi.filesystem;
 
 import com.google.common.base.Objects;
 import com.google.common.io.Closeables;
+
 import java.io.IOException;
+
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.hadoop.conf.Configuration;
@@ -26,6 +28,8 @@ import org.apache.hadoop.fs.Path;
 import org.kitesdk.data.CompressionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import parquet.hadoop.BlockSizeReachedException;
 
 class DurableParquetAppender<E extends IndexedRecord> implements FileSystemWriter.FileAppender<E> {
 
@@ -38,29 +42,43 @@ class DurableParquetAppender<E extends IndexedRecord> implements FileSystemWrite
   private final ParquetAppender<E> parquetAppender;
   private final Schema schema;
   private final FileSystem fs;
-
+  
   public DurableParquetAppender(FileSystem fs, Path path, Schema schema,
-                                Configuration conf, CompressionType compressionType) {
-    this.fs = fs;
-    this.path = path;
-    this.schema = schema;
-    this.avroPath = avroPath(path);
-    this.avroAppender = new AvroAppender<E>(
-        fs, avroPath, schema, CompressionType.Snappy);
-    this.parquetAppender = new ParquetAppender<E>(
-        fs, path, schema, conf, compressionType);
+          Configuration conf, CompressionType compressionType) {
+
+	  this(fs, path, schema, conf, compressionType, false);
+  }
+  
+  public DurableParquetAppender(FileSystem fs, Path path, Schema schema,
+          Configuration conf, CompressionType compressionType, boolean file_per_block) {
+	 
+	    this.fs = fs;
+	    this.path = path;
+	    this.schema = schema;
+	    this.avroPath = avroPath(path);
+	    this.avroAppender = new AvroAppender<E>(
+	        fs, avroPath, schema, CompressionType.Snappy);
+	    this.parquetAppender = new ParquetAppender<E>(
+	        fs, path, schema, conf, compressionType, file_per_block);
   }
 
-  @Override
+@Override
   public void open() throws IOException {
     avroAppender.open();
     parquetAppender.open();
   }
 
   @Override
-  public void append(E entity) throws IOException {
+  public void append(E entity) throws IOException, BlockSizeReachedException {
     avroAppender.append(entity);
-    parquetAppender.append(entity);
+    
+    try {
+		parquetAppender.append(entity);
+	} catch (BlockSizeReachedException e) {
+		Closeables.close(avroAppender, false);
+		
+		throw new BlockSizeReachedException(e);
+	}
   }
 
   @Override

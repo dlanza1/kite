@@ -18,10 +18,12 @@ package org.kitesdk.data.spi.filesystem;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.UUID;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -38,13 +40,15 @@ import org.kitesdk.data.spi.ReaderWriterState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import parquet.hadoop.BlockSizeReachedException;
+
 class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileSystemWriter.class);
 
   static interface FileAppender<E> extends Flushable, Closeable {
     public void open() throws IOException;
-    public void append(E entity) throws IOException;
+    public void append(E entity) throws IOException, BlockSizeReachedException;
     public void sync() throws IOException;
     public void cleanup() throws IOException;
   }
@@ -57,6 +61,8 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
   private Path finalPath;
   private ReaderWriterState state;
   private int count = 0;
+  
+  boolean file_per_parquet_block = false;
 
   @VisibleForTesting
   final Configuration conf;
@@ -70,6 +76,15 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
     this.descriptor = descriptor;
     this.conf = new Configuration(fs.getConf());
     this.state = ReaderWriterState.NEW;
+    
+    if (Formats.PARQUET.equals(descriptor.getFormat())) {
+    	String file_per_block = descriptor.getProperty("parquet.file_per_block");
+    	
+        if( file_per_block != null
+        		&& file_per_block.equals("true")){
+        	file_per_parquet_block = true;
+        }
+    }
 
     // copy file format settings from custom properties to the Configuration
     for (String prop : descriptor.listProperties()) {
@@ -79,8 +94,13 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
 
   @Override
   public final void initialize() {
-    Preconditions.checkState(state.equals(ReaderWriterState.NEW),
-        "Unable to open a writer from state:%s", state);
+	if(!file_per_parquet_block)
+	  Preconditions.checkState(state.equals(ReaderWriterState.NEW),
+	        "Unable to open a writer from state:%s", state);
+	else
+		Preconditions.checkState(state.equals(ReaderWriterState.OPEN)
+				|| state.equals(ReaderWriterState.NEW),
+		        "Unable to reinitialize a writer from state:%s", state);
 
     // ensure the directory exists
     try {
@@ -115,8 +135,28 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
         "Attempt to write to a writer in state:%s", state);
 
     try {
-      appender.append(entity);
-      count += 1;
+      try {
+  		count += 1;
+		appender.append(entity);
+	  } catch (BlockSizeReachedException e) {
+		  if (Formats.PARQUET.equals(descriptor.getFormat())
+				  && file_per_parquet_block) {
+			  
+			  treatTmpFile();
+
+		      try {
+		        appender.cleanup();
+		      } catch (IOException ex) {
+		        throw new DatasetIOException("Failed to clean up " + appender, ex);
+		      }
+		      
+			  initialize();
+		  }else{
+			  this.state = ReaderWriterState.ERROR;
+			  throw new DatasetIOException(
+			          "Failed to append " + entity + " to " + appender + ", bad condifuration of Parquet per file", new IOException());
+		  }
+	  }
     } catch (IOException e) {
       this.state = ReaderWriterState.ERROR;
       throw new DatasetIOException(
@@ -158,36 +198,7 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
         throw new DatasetIOException("Failed to close appender " + appender, e);
       }
 
-      if (count > 0) {
-        // commit the temp file
-        try {
-          if (!fs.rename(tempPath, finalPath)) {
-            this.state = ReaderWriterState.ERROR;
-            throw new DatasetWriterException(
-                "Failed to move " + tempPath + " to " + finalPath);
-          }
-        } catch (IOException e) {
-          this.state = ReaderWriterState.ERROR;
-          throw new DatasetIOException("Failed to commit " + finalPath, e);
-        }
-
-        LOG.debug("Committed {} for appender {} ({} entities)",
-            new Object[]{finalPath, appender, count});
-      } else {
-        // discard the temp file
-        try {
-          if (!fs.delete(tempPath, true)) {
-            this.state = ReaderWriterState.ERROR;
-            throw new DatasetWriterException("Failed to delete " + tempPath);
-          }
-        } catch (IOException e) {
-          this.state = ReaderWriterState.ERROR;
-          throw new DatasetIOException(
-              "Failed to remove temporary file " + tempPath, e);
-        }
-
-        LOG.debug("Discarded {} ({} entities)", tempPath, count);
-      }
+      treatTmpFile();
 
       try {
         appender.cleanup();
@@ -200,6 +211,40 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
     } else if (state.equals(ReaderWriterState.ERROR)) {
       this.state = ReaderWriterState.CLOSED;
     }
+  }
+
+  private void treatTmpFile() {
+	  if (count > 0) {
+	        // commit the temp file
+	        try {
+	          if (!fs.rename(tempPath, finalPath)) {
+	            this.state = ReaderWriterState.ERROR;
+	            throw new DatasetWriterException(
+	                "Failed to move " + tempPath + " to " + finalPath);
+	          }
+	        } catch (IOException e) {
+	          this.state = ReaderWriterState.ERROR;
+	          throw new DatasetIOException("Failed to commit " + finalPath, e);
+	        }
+
+	        LOG.debug("Committed {} for appender {} ({} entities)",
+	            new Object[]{finalPath, appender, count});
+	      } else {
+	        // discard the temp file
+	        try {
+	          if (!fs.delete(tempPath, true)) {
+	            this.state = ReaderWriterState.ERROR;
+	            throw new DatasetWriterException("Failed to delete " + tempPath);
+	          }
+	        } catch (IOException e) {
+	          this.state = ReaderWriterState.ERROR;
+	          throw new DatasetIOException(
+	              "Failed to remove temporary file " + tempPath, e);
+	        }
+
+	        LOG.debug("Discarded {} ({} entities)", tempPath, count);
+	      }
+	
   }
 
   @Override
@@ -224,11 +269,11 @@ class FileSystemWriter<E> extends AbstractDatasetWriter<E> {
       if (DescriptorUtil.isDisabled(
           FileSystemProperties.NON_DURABLE_PARQUET_PROP, descriptor)) {
         return (FileAppender<E>) new DurableParquetAppender(
-            fs, temp, descriptor.getSchema(), conf, descriptor.getCompressionType());
+            fs, temp, descriptor.getSchema(), conf, descriptor.getCompressionType(), file_per_parquet_block);
       } else {
         return (FileAppender<E>) new ParquetAppender(
             fs, temp, descriptor.getSchema(), conf,
-            descriptor.getCompressionType());
+            descriptor.getCompressionType(), file_per_parquet_block);
       }
     } else if (Formats.AVRO.equals(format)) {
       return new AvroAppender<E>(fs, temp, descriptor.getSchema(),
