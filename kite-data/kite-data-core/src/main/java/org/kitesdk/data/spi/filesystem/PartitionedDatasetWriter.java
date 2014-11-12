@@ -108,9 +108,7 @@ class PartitionedDatasetWriter<E> extends AbstractDatasetWriter<E> {
     
     DatasetWriter<E> writer = cachedWriters.getIfPresent(reusedKey);
     if (writer == null) {
-    	System.out.println("New writter for: "+reusedKey);
-    	System.out.println(cachedWriters.size());
-    	
+
       // avoid checking in every whether the entity belongs in the view by only
       // checking when a new writer is created
       Preconditions.checkArgument(view.includes(entity),

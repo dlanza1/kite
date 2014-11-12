@@ -993,7 +993,10 @@ public class DatasetDescriptor {
         }
         Preconditions.checkState(
             SchemaUtil.isConsistentWithExpectedType(
-                fieldSchema.getType(), fp.getSourceType()),
+                fieldSchema.getType(), fp.getSourceType())
+        || (fieldSchema.getType() == Schema.Type.UNION
+         && SchemaUtil.isConsistentWithExpectedType(
+                fieldSchema.getTypes().get(0).getType(), fp.getSourceType())),
             "Field type %s does not match partitioner %s",
             fieldSchema.getType(), fp);
       }
