@@ -40,8 +40,7 @@ class ParquetAppender<E extends IndexedRecord> implements FileSystemWriter.FileA
 
   private static final Logger LOG = LoggerFactory
     .getLogger(ParquetAppender.class);
-//  private static final int DEFAULT_BLOCK_SIZE = 50 * 1024 * 1024;
-  private static final int DEFAULT_BLOCK_SIZE = 256 * 1024 * 1024;
+  private static final int DEFAULT_BLOCK_SIZE = 50 * 1024 * 1024;
 
   private final Path path;
   private final Schema schema;
@@ -77,7 +76,7 @@ class ParquetAppender<E extends IndexedRecord> implements FileSystemWriter.FileA
     }
 
     avroParquetWriter = new AvroParquetWriter<E>(fileSystem.makeQualified(path),
-        schema, codecName, DEFAULT_BLOCK_SIZE,
+        schema, codecName, conf.getInt("parquet.block.size", DEFAULT_BLOCK_SIZE),
         ParquetWriter.DEFAULT_PAGE_SIZE,
         ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED, conf, file_per_block);
   }

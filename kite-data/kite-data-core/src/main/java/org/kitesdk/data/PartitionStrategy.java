@@ -361,6 +361,20 @@ public class PartitionStrategy {
       add(new IntRangeFieldPartitioner(sourceName, upperBounds));
       return this;
     }
+    
+    /**
+     * Configure a module partitioner.
+     *
+     * @param sourceName
+     *          The entity field name from which to get values to be
+     *          partitioned.
+     * @param module Module to be used.
+     * @return An instance of the builder for method chaining.
+     */
+    public Builder module(String sourceName, @Nullable String name, int module) {
+      add(new ModuleFieldPartitioner(sourceName, name, module));
+      return this;
+    }
 
     /**
      * Configure a module partitioner.

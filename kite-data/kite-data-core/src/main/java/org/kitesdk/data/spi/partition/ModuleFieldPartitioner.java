@@ -12,8 +12,11 @@ public class ModuleFieldPartitioner extends FieldPartitioner<Integer, Integer> {
 	private int module;
 
 	public ModuleFieldPartitioner(String sourceName, int module) {
-		super(sourceName, sourceName + "_mod_" + module, Integer.class, Integer.class,
-				(int) module);
+		this(sourceName, sourceName + "_part_mod_" + module, module);
+	}
+
+	public ModuleFieldPartitioner(String sourceName, String name, int module) {
+		super(sourceName, name, Integer.class, Integer.class, module);
 
 		this.module = module;
 	}

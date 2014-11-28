@@ -29,7 +29,6 @@ import javax.annotation.concurrent.Immutable;
         "EQ: parent equals implementation checks child type")
 @Immutable
 public class MonthFieldPartitioner extends CalendarFieldPartitioner {
-  private final NumberFormat format;
 
   public MonthFieldPartitioner(String sourceName) {
     this(sourceName, null);
@@ -37,9 +36,6 @@ public class MonthFieldPartitioner extends CalendarFieldPartitioner {
 
   public MonthFieldPartitioner(String sourceName, @Nullable String name) {
     super(sourceName, (name == null ? "month" : name), Calendar.MONTH, 12);
-    format = NumberFormat.getIntegerInstance();
-    format.setMinimumIntegerDigits(2);
-    format.setMaximumIntegerDigits(2);
   }
 
   @Override
