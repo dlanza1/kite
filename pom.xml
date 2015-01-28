@@ -560,6 +560,7 @@
               <exclude>**/src/test/resources/test-documents/**</exclude> <!-- ASL 2.0 -->
               <exclude>**/src/site/**/*.confluence</exclude>
               <exclude>**/nbactions.xml</exclude> <!-- Netbeans configs, not checked in -->
+              <exclude>**/*.jardesc</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -573,6 +574,7 @@
           <artifactId>maven-jar-plugin</artifactId>
           <version>${vers.maven-jar-plugin}</version>
         </plugin>
+        <!-- 
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
@@ -591,6 +593,7 @@
             </execution>
           </executions>
         </plugin>
+         -->
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
