@@ -42,7 +42,7 @@ import org.kitesdk.data.spi.FieldPartitioner;
 @Immutable
 public class CalendarFieldPartitioner extends FieldPartitioner<Long, Integer> {
 
-  protected static final TimeZone UTC = TimeZone.getTimeZone("Etc/GMT-2");
+  public static final TimeZone UTC = TimeZone.getTimeZone("Etc/GMT-2");
   private static final Long NANO_MILLI_CONV = (long) Math.pow(10, 6);
   protected int calendarField;
 
