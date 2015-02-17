@@ -1078,6 +1078,11 @@
         <artifactId>mojo-executor</artifactId>
         <version>${vers.mojo-executor}</version>
       </dependency>
+      <dependency>
+      	<groupId>com.twitter</groupId>
+      	<artifactId>parquet-hadoop</artifactId>
+      	<version>1.6.0rc3-SNAPSHOT</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

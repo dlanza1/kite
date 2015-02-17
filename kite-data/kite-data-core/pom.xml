@@ -135,6 +135,7 @@
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>parquet-avro</artifactId>
+      <version>1.6.0rc3-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
@@ -210,7 +211,6 @@
     <dependency>
     	<groupId>com.twitter</groupId>
     	<artifactId>parquet-hadoop</artifactId>
-    	<version>1.6.0rc3-SNAPSHOT</version>
     </dependency>
 
   </dependencies>
