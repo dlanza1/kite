@@ -153,7 +153,7 @@
     <vers.jetty>8.1.14.v20131031</vers.jetty>
     <vers.jexl>2.1.1</vers.jexl>
     <vers.compress>1.4.1</vers.compress>
-    <vers.junit>4.10</vers.junit>
+    <vers.junit>4.13.1</vers.junit>
     <vers.log4j>1.2.16</vers.log4j>
     <vers.maven>2.0.6</vers.maven>
     <vers.mockito>1.9.5</vers.mockito>
